@@ -4,7 +4,8 @@
   "description": "potato frontend",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "webpack"
+    "build": "webpack --config webpack.prod.js",
+    "dev": "webpack --config webpack.dev.js" 
   },
   "author": "jammychiou1",
   "license": "ISC",
@@ -22,6 +23,7 @@
     "react-qr-reader": "^2.2.1",
     "url-loader": "^4.1.0",
     "webpack": "^4.44.1",
-    "webpack-cli": "^3.3.12"
+    "webpack-cli": "^3.3.12",
+    "webpack-merge": "^5.1.2"
   }
 }

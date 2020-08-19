@@ -1,4 +1,5 @@
 node_modules/*
-dist/*
+public/*
+public_dev/*
 package-lock.json
 *.swp
