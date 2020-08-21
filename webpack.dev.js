@@ -1,12 +1,20 @@
 const {merge} = require('webpack-merge');
 const path = require('path');
-const HtmlWebpackPlugin = require('html-webpack-plugin');
+const webpack = require('webpack');
 const common = require('./webpack.common');
 
 module.exports = merge(common, {
     mode: 'development',
-    output: {
-        filename: 'bundle.js',
-        path: path.resolve(__dirname, 'public_dev')
+    devServer: {
+        hot: true,
+        port: 9000
     },
+    output: {
+        filename: '[name].bundle.js',
+    },
+    plugins: [
+        new webpack.DefinePlugin({
+            API_HOST: JSON.stringify('http://localhost:8080')
+        })
+    ]
 });

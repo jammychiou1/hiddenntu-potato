@@ -1,4 +1,3 @@
-const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
@@ -27,8 +26,8 @@ module.exports = {
         ]
     },
     entry: {
-//        index: './src/index.js',
-        test: './src/test.js'
+        index: ['@babel/polyfill', './src/index.js']
+//        test: './src/test.js'
     },
     plugins: [
         new HtmlWebpackPlugin({
