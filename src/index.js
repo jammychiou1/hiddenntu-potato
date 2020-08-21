@@ -81,8 +81,8 @@ class Main extends React.Component {
                 'Content-Type': 'application/json'
             }),
             method: 'PUT',
-            body: JSON.stringify({username: username}),
             credentials: 'include',
+            body: JSON.stringify({username: username}),
             mode: 'cors'
         })
         .then(async response => {
@@ -97,12 +97,16 @@ class Main extends React.Component {
     }
 
     logout() {
-        fetch('../logout.php', {
-            credentials: 'same-origin'  
+        fetch(API_HOST + '/session', {
+            headers: new Headers({
+                'Content-Type': 'application/json'
+            }),
+            method: 'DELETE',
+            credentials: 'include',
+            mode: 'cors'
         })
-        .then(response => response.text())
-        .then(text => {
-            this.testLogin();
+        .then(async response => {
+            this.setState({loggedIn: false, loggedUser: null, fail: false});
         });
     }
 
