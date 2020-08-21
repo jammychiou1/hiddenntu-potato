@@ -11,7 +11,7 @@ module.exports = merge(common, {
     },
     plugins: [
         new webpack.DefinePlugin({
-            API_HOST: JSON.stringify('https://API')
+            API_HOST: JSON.stringify('https://hiddenntu-potato-api.herokuapp.com')
         })
     ]
 });
