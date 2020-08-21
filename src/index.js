@@ -50,6 +50,8 @@ class Login extends React.Component {
     }
 }
 
+const sessionPath = 'session';
+
 class Main extends React.Component {
     constructor(props) {
         super(props);
@@ -62,9 +64,8 @@ class Main extends React.Component {
     }
 
     getSessionStatus() {
-        fetch(API_HOST + '/session', {
+        fetch(API_HOST + '/' + sessionPath, {
             credentials: 'include',
-            //mode: 'cors'
         })
         .then(async response => {
             if (response.ok) {
@@ -75,8 +76,8 @@ class Main extends React.Component {
     }
 
     testLogin(username = null) {
-        console.log(JSON.stringify({username: username}));
-        fetch(API_HOST + '/session', {
+        //console.log(JSON.stringify({username: username}));
+        fetch(API_HOST + '/' + sessionPath, {
             headers: new Headers({
                 'Content-Type': 'application/json'
             }),
@@ -97,7 +98,7 @@ class Main extends React.Component {
     }
 
     logout() {
-        fetch(API_HOST + '/session', {
+        fetch(API_HOST + '/' + sessionPath, {
             headers: new Headers({
                 'Content-Type': 'application/json'
             }),
