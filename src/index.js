@@ -51,6 +51,9 @@ class Login extends React.Component {
 }
 
 const sessionPath = 'session';
+const sessionIDKey = 'potatoSessionID';
+const sessionIDHeaderName = 'Potato-Session-Id';
+const clearSessionIDHeaderName = 'Clear-Potato-Session-Id';
 
 class Main extends React.Component {
     constructor(props) {
@@ -64,13 +67,20 @@ class Main extends React.Component {
     }
 
     getSessionStatus() {
+        const sessionID = localStorage.getItem(sessionIDKey);
         fetch(API_HOST + '/' + sessionPath, {
-            credentials: 'include',
+            headers: new Headers({
+                [sessionIDHeaderName]: sessionID
+            }),
+            mode: 'cors'
         })
         .then(async response => {
             if (response.ok) {
                 const json = await response.json();
                 this.setState({loggedIn: true, loggedUser: json.username, fail: false});
+            }
+            else {
+                localStorage.removeItem(sessionIDKey);
             }
         });
     }
@@ -82,31 +92,35 @@ class Main extends React.Component {
                 'Content-Type': 'application/json'
             }),
             method: 'PUT',
-            credentials: 'include',
             body: JSON.stringify({username: username}),
             mode: 'cors'
         })
         .then(async response => {
+            console.log(response.headers);
             if (response.ok) {
+                localStorage.setItem(sessionIDKey, response.headers.get(sessionIDHeaderName));
                 const json = await response.json();
                 this.setState({loggedIn: true, loggedUser: json.username, fail: false});
             }
             else {
+                localStorage.removeItem(sessionIDKey);
                 this.setState({loggedIn: false, loggedUser: null, fail: true});
             }
         });
     }
 
     logout() {
+        const sessionID = localStorage.getItem(sessionIDKey);
         fetch(API_HOST + '/' + sessionPath, {
             headers: new Headers({
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                [sessionIDHeaderName]: sessionID
             }),
             method: 'DELETE',
-            credentials: 'include',
             mode: 'cors'
         })
         .then(async response => {
+            localStorage.removeItem(sessionIDKey);
             this.setState({loggedIn: false, loggedUser: null, fail: false});
         });
     }
