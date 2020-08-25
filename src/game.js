@@ -1,29 +1,28 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
 import BG from './bg.jpeg';
 import {QR} from './QR';
 import {ItemMenu} from './itemMenu';
 import {History} from './history';
 import {FancyButton} from './fancybutton';
-//import QrReader from 'react-qr-reader';
+import {Decision} from './decision';
+import {constants} from './constants';
+
 export class Game extends React.Component {
   constructor(props) {
     super(props);
-    //this.dialogue = ['Apple', 'Banana'];
+    console.log('constructing');
     this.state = {
-      width: 0,
-      height: 0,
       name: '',
       text: '',
-      answer: '',
-      decisions: [],
+      mode: '',
       UI: {
         QR: false,
         itemMenu: false,
+        itemView: false,
         history: false,
-        itemList: [],
-        currentItem: null 
-      }
+        currentItem: '',
+      },
+      answer: '',
     };
     this.audio = null;
   }
@@ -35,24 +34,87 @@ export class Game extends React.Component {
     //this.audio = new Audio('../response.php?text=' + audioFile);
     //this.audio.play();
   }
+  processResponse(request) {
+    request.then(async response => {
+      if (response.ok) {
+        const json = await response.json();
+        this.setState({
+          name: json.name,
+          text: json.text,
+          mode: json.mode,
+          UI: json.UI,
+          answer: ''
+        });
+      }
+      else {
+        localStorage.removeItem(constants.sessionIDKey);
+        alert('已登出，請重新整理');
+      }
+    });
+  }
+  load() {
+    console.log('loading');
+    const sessionID = localStorage.getItem(constants.sessionIDKey);
+    this.processResponse(fetch(API_HOST + '/' + constants.gamePath, {
+      headers: new Headers({
+        [constants.sessionIDHeaderName]: sessionID
+      }),
+      mode: 'cors'
+    }));
+  }
+  updateNext() {
+    console.log('next');
+    const sessionID = localStorage.getItem(constants.sessionIDKey);
+    this.processResponse(fetch(API_HOST + '/' + constants.gamePath + '/' + constants.nextPath, {
+      headers: new Headers({
+        [constants.sessionIDHeaderName]: sessionID
+      }),
+      method: 'POST',
+      mode: 'cors'
+    }));
+  }
+  updateQR(key) {
+    console.log('QR');
+    const sessionID = localStorage.getItem(constants.sessionIDKey);
+    this.processResponse(fetch(API_HOST + '/' + constants.gamePath + '/' + constants.QRPath, {
+      headers: new Headers({
+        [constants.sessionIDHeaderName]: sessionID
+      }),
+      method: 'POST',
+      body: JSON.stringify({key: key}),
+      mode: 'cors'
+    }));
+  }
+  updateAnswer(key) {
+    console.log('answer');
+    const sessionID = localStorage.getItem(constants.sessionIDKey);
+    this.processResponse(fetch(API_HOST + '/' + constants.gamePath + '/' + constants.answerPath, {
+      headers: new Headers({
+        [constants.sessionIDHeaderName]: sessionID
+      }),
+      method: 'POST',
+      body: JSON.stringify({key: key}),
+      mode: 'cors'
+    }));
+  }
   request(action = 'load', query = '') {
     let str = '?action=' + action;
-    if (action == 'QR') {
+    if (action === 'QR') {
       str += '&key=' + query;
     }
-    if (action == 'answer') {
+    if (action === 'answer') {
       str += '&key=' + query;
     }
-    if (action == 'decision') {
+    if (action === 'decision') {
       str += '&id=' + query;
     }
-    if (action == 'UIOpen') {
+    if (action === 'UIOpen') {
       str += '&target=' + query;
     }
-    if (action == 'UIClose') {
+    if (action === 'UIClose') {
       str += '&target=' + query;
     }
-    if (action == 'itemChange') {
+    if (action === 'itemChange') {
       str += '&target=' + query;
     }
     //alert(str);
@@ -65,13 +127,12 @@ export class Game extends React.Component {
       if (!json.user) {
         alert('已登出，請重新整理');
       }
-      else if (json.content == 'invalid') {
+      else if (json.content === 'invalid') {
         //this.setState({text: 'invalid QQ'});
         //alert('invalid QQ');
       }
       else {
-        //this.mode = json.content.mode;
-        if (action == 'next') this.playAudio(json.content.audio);
+        if (action === 'next') this.playAudio(json.content.audio);
         this.setState({
           name: json.content.name,
           text: json.content.sentence,
@@ -82,26 +143,13 @@ export class Game extends React.Component {
     });
   }
   componentDidMount() {
-    this.setState({width: window.innerWidth, height: window.innerHeight});
     this.load();
-  }
-  load() {
-    this.request();
   }
   trigger() {
     console.log('triggered');
-    if (this.state.UI.mode == 'next' || this.state.UI.mode == 'cutscene') {
-      this.request('next');
+    if (this.state.mode === 'next' || this.state.mode === 'cutscene') {
+      this.updateNext();
     }
-    //this.setState({count: (this.state.count + 1) % this.dialogue.length});
-  }
-  openMap(e) {
-    e.stopPropagation();
-    alert('map');
-  }
-  openHistory(e) {
-    e.stopPropagation();
-    alert('history');
   }
   changeUI(target, open) {
     console.log('changing');
@@ -117,9 +165,9 @@ export class Game extends React.Component {
     this.request('itemChange', target);
   }
   handleScan(data) {
-    if (this.state.UI.mode == 'QR') {
+    if (this.state.mode === 'QR') {
       //alert(data);
-      this.request('QR', data);
+      this.updateQR(data);
     }
     else {
       //alert('nothing');
@@ -130,58 +178,25 @@ export class Game extends React.Component {
     this.request('answer', this.state.answer);
   }
   render() {
-    console.log('rendering game');
+    //console.log('rendering game');
+    console.log(this);
     const QRBlock = this.state.UI.QR && (
       <QR handleClose={() => this.changeUI('QR', false)} handleScan={data => this.handleScan(data)}/>
     );
     const ItemMenuBlock = this.state.UI.itemMenu && (
       <ItemMenu 
-        handleClose={() => this.changeUI('itemMenu', false)} 
-        itemList={this.state.UI.itemList}
+        handleCloseMenu={() => this.changeUI('itemMenu', false)} 
+        handleCloseView={() => this.changeUI('itemMenu', false)} 
         currentItem={this.state.UI.currentItem}
         itemChange={target => this.itemChange(target)}
       />
     );
     const HistoryBlock = this.state.UI.history && (
-      <History
-        handleClose={() => this.changeUI('history', false)} 
-      />
+      <History handleClose={() => this.changeUI('history', false)}/>
     );
-    let Decisions = null;
-    if (this.state.UI.mode == 'decision') {
-      let declist = [];
-      for (let i = 0; i < this.state.decisions.length; i++) {
-        declist.push(
-          <div 
-            key={i}
-            onClick={e => {
-              e.stopPropagation();
-              console.log('hit' + i);
-              this.request('decision', i);
-            }}
-            style={{
-              backgroundColor: '#123456',
-              margin: '5%'
-            }}
-          >
-            {this.state.decisions[i]}
-          </div>
-        );
-      }
-      Decisions = (
-        <div
-          style={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            width: '60%',
-            transform: 'translate(-50%, -50%)',
-          }}
-        >
-          {declist}
-        </div>
-      );
-    }
+    const Decisions = this.state.mode === 'decision' && (
+      <Decision chooseDecision={() => this.chooseDecision()}/>
+    );
     const MainArea = (
       <div style={{position: 'absolute', height: '55%', width: '100%'}}>
         {Decisions}
@@ -189,12 +204,12 @@ export class Game extends React.Component {
     );
     return (
       <div 
-        //onClick={() => this.trigger()} 
         style={{
-          position: 'relative',
-          height: this.state.height,
-          width: this.state.width,
-          //margin: '0px',
+          position: 'fixed',
+          height: '100vh',
+          width: '100vw',
+          top: '0px',
+          left: '0px',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundImage: `url(${BG})`
@@ -204,13 +219,12 @@ export class Game extends React.Component {
         {ItemMenuBlock}
         {HistoryBlock}
         <div 
-          //onClick={e => {e.stopPropagation(); console.log('prevented');}}
           onClick={e => {e.stopPropagation(); this.trigger()}}
           style={{
             position: 'absolute',
             width: '100%',
             height: '100%',
-            zIndex: this.state.UI.mode == 'cutscene' ? '10': '1'
+            zIndex: this.state.mode === 'cutscene' ? '10': '1'
           }}
         > 
           {MainArea}
@@ -222,16 +236,15 @@ export class Game extends React.Component {
           }}>
             <div style={{
               position: 'absolute',
-              //backgroundColor: '#92a8d1',
-              backgroundColor: this.state.UI.mode == 'cutscene' ? '#92a8d1' : '#aaaa99',
+              backgroundColor: this.state.mode === 'cutscene' ? '#92a8d1' : '#aaaa99',
               margin: '2.5%',
               top: '0px',
               bottom: '0px',
               left: '0px',
               right: '0px',
             }}>
-              <div>{this.state.name != '' && this.state.name + '：'}{this.state.text}{this.state.UI.mode == 'QR' && <FancyButton handleClick={() => this.changeUI('QR', true)} text={'QR'}/>}</div>
-              {this.state.UI.mode == 'answer' && <div>
+              <div>{this.state.name !== '' && this.state.name + '：'}{this.state.text}{this.state.mode === 'QR' && <FancyButton handleClick={() => this.changeUI('QR', true)} text={'QR'}/>}</div>
+              {this.state.mode === 'answer' && <div>
                 <input 
                   type='text' 
                   value={this.state.answer} 
@@ -239,21 +252,16 @@ export class Game extends React.Component {
                     this.setState({answer: event.target.value});
                   }} 
                 />
-                <FancyButton handleClick={() => this.submitAnswer()} text={'確認'}/>
+                <FancyButton handleClick={() => this.updateAnswer()} text={'確認'}/>
                 {/*<button onClick={() => this.submitAnswer()}>Submit</button>*/}
               </div>}
-              {this.state.UI.mode != 'cutscene' && (
+              {this.state.mode !== 'cutscene' && (
                 <div style={{
                   position: 'absolute',
                   margin: '2.5%',
                   bottom: '0px',
                   right: '0px'
                 }}>
-                  {/*
-                  <button onClick={e => {e.stopPropagation(); this.changeUI('QR', true);}} disabled={this.state.UI.mode != 'QR'}>QR</button>
-                  <button onClick={e => {e.stopPropagation(); this.changeUI('itemMenu', true);}}>道具</button>
-                  <button onClick={e => {e.stopPropagation(); this.changeUI('history', true);}}>紀錄</button>
-                  */}
                   <FancyButton handleClick={() => this.changeUI('itemMenu', true)} text={'道具'}/>
                   <FancyButton handleClick={() => this.changeUI('history', true)} text={'記錄'}/>
                 </div>
@@ -262,7 +270,7 @@ export class Game extends React.Component {
           </div>
         </div>
       </div>
-    )
+    );
   }
 }
 

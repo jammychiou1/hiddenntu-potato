@@ -31,7 +31,8 @@ module.exports = {
     },
     plugins: [
         new HtmlWebpackPlugin({
-            title: '河北馬鈴薯王'
+            title: '河北馬鈴薯王',
+            meta: {viewport: 'width=device-width, initial-scale=1, maximum-scale=1'}
         })
     ]
 };
