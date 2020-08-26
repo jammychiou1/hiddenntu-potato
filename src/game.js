@@ -46,7 +46,10 @@ export class Game extends React.Component {
           answer: ''
         });
       }
-      else {
+      else if (response.status === 400) {
+        this.load();
+      }
+      else if (response.status === 401) {
         localStorage.removeItem(constants.sessionIDKey);
         alert('已登出，請重新整理');
       }
@@ -78,7 +81,8 @@ export class Game extends React.Component {
     const sessionID = localStorage.getItem(constants.sessionIDKey);
     this.processResponse(fetch(API_HOST + '/' + constants.gamePath + '/' + constants.QRPath, {
       headers: new Headers({
-        [constants.sessionIDHeaderName]: sessionID
+        [constants.sessionIDHeaderName]: sessionID,
+        'Content-Type': 'application/json'
       }),
       method: 'POST',
       body: JSON.stringify({key: key}),
@@ -90,10 +94,24 @@ export class Game extends React.Component {
     const sessionID = localStorage.getItem(constants.sessionIDKey);
     this.processResponse(fetch(API_HOST + '/' + constants.gamePath + '/' + constants.answerPath, {
       headers: new Headers({
-        [constants.sessionIDHeaderName]: sessionID
+        [constants.sessionIDHeaderName]: sessionID,
+        'Content-Type': 'application/json'
       }),
       method: 'POST',
       body: JSON.stringify({key: key}),
+      mode: 'cors'
+    }));
+  }
+  changeUI(obj) {
+    console.log('change UI', obj);
+    const sessionID = localStorage.getItem(constants.sessionIDKey);
+    this.processResponse(fetch(API_HOST + '/' + constants.gamePath + '/' + constants.UIPath, {
+      headers: new Headers({
+        [constants.sessionIDHeaderName]: sessionID,
+        'Content-Type': 'application/json'
+      }),
+      method: 'POST',
+      body: JSON.stringify(obj),
       mode: 'cors'
     }));
   }
@@ -151,15 +169,6 @@ export class Game extends React.Component {
       this.updateNext();
     }
   }
-  changeUI(target, open) {
-    console.log('changing');
-    if (open) {
-      this.request('UIOpen', target);
-    }
-    else {
-      this.request('UIClose', target);
-    }
-  }
   itemChange(target) {
     console.log('item changing');
     this.request('itemChange', target);
@@ -179,20 +188,19 @@ export class Game extends React.Component {
   }
   render() {
     //console.log('rendering game');
-    console.log(this);
     const QRBlock = this.state.UI.QR && (
-      <QR handleClose={() => this.changeUI('QR', false)} handleScan={data => this.handleScan(data)}/>
+      <QR handleClose={() => this.changeUI({target: 'QR', flag: false})} handleScan={key => this.updateQR(key)}/>
     );
     const ItemMenuBlock = this.state.UI.itemMenu && (
       <ItemMenu 
-        handleCloseMenu={() => this.changeUI('itemMenu', false)} 
-        handleCloseView={() => this.changeUI('itemMenu', false)} 
+        handleCloseMenu={() => this.changeUI({target: 'itemMenu', flag: false})} 
+        handleCloseView={() => this.changeUI({target: 'itemView', flag: false})} 
         currentItem={this.state.UI.currentItem}
-        itemChange={target => this.itemChange(target)}
+        itemChange={target => this.changeUI({target: 'currentItem', item: target})}
       />
     );
     const HistoryBlock = this.state.UI.history && (
-      <History handleClose={() => this.changeUI('history', false)}/>
+      <History handleClose={() => this.changeUI({target: 'history', flag: false})}/>
     );
     const Decisions = this.state.mode === 'decision' && (
       <Decision chooseDecision={() => this.chooseDecision()}/>
@@ -243,7 +251,7 @@ export class Game extends React.Component {
               left: '0px',
               right: '0px',
             }}>
-              <div>{this.state.name !== '' && this.state.name + '：'}{this.state.text}{this.state.mode === 'QR' && <FancyButton handleClick={() => this.changeUI('QR', true)} text={'QR'}/>}</div>
+              <div>{this.state.name !== '' && this.state.name + '：'}{this.state.text}{this.state.mode === 'QR' && <FancyButton handleClick={() => this.changeUI({target: 'QR', flag: true})} text={'QR'}/>}</div>
               {this.state.mode === 'answer' && <div>
                 <input 
                   type='text' 
@@ -262,8 +270,8 @@ export class Game extends React.Component {
                   bottom: '0px',
                   right: '0px'
                 }}>
-                  <FancyButton handleClick={() => this.changeUI('itemMenu', true)} text={'道具'}/>
-                  <FancyButton handleClick={() => this.changeUI('history', true)} text={'記錄'}/>
+                  <FancyButton handleClick={() => this.changeUI({target: 'itemMenu', flag: true})} text={'道具'}/>
+                  <FancyButton handleClick={() => this.changeUI({target: 'history', flag: true})} text={'記錄'}/>
                 </div>
               )}
             </div>

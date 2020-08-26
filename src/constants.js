@@ -7,5 +7,6 @@ export const constants = {
   nextPath: 'next',
   QRPath: 'QR',
   answerPath: 'answer',
+  UIPath: 'UI',
   decisionPath: 'decision',
 };
