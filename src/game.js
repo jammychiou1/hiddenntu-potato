@@ -60,7 +60,7 @@ export class Game extends React.Component {
     const sessionID = localStorage.getItem(constants.sessionIDKey);
     this.processResponse(fetch(API_HOST + '/' + constants.gamePath, {
       headers: new Headers({
-        [constants.sessionIDHeaderName]: sessionID
+        [constants.sessionIDHeaderName]: sessionID,
       }),
       mode: 'cors'
     }));
@@ -70,7 +70,7 @@ export class Game extends React.Component {
     const sessionID = localStorage.getItem(constants.sessionIDKey);
     this.processResponse(fetch(API_HOST + '/' + constants.gamePath + '/' + constants.nextPath, {
       headers: new Headers({
-        [constants.sessionIDHeaderName]: sessionID
+        [constants.sessionIDHeaderName]: sessionID,
       }),
       method: 'POST',
       mode: 'cors'
@@ -82,23 +82,36 @@ export class Game extends React.Component {
     this.processResponse(fetch(API_HOST + '/' + constants.gamePath + '/' + constants.QRPath, {
       headers: new Headers({
         [constants.sessionIDHeaderName]: sessionID,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       }),
       method: 'POST',
       body: JSON.stringify({key: key}),
       mode: 'cors'
     }));
   }
-  updateAnswer(key) {
+  updateAnswer() {
     console.log('answer');
     const sessionID = localStorage.getItem(constants.sessionIDKey);
     this.processResponse(fetch(API_HOST + '/' + constants.gamePath + '/' + constants.answerPath, {
       headers: new Headers({
         [constants.sessionIDHeaderName]: sessionID,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       }),
       method: 'POST',
-      body: JSON.stringify({key: key}),
+      body: JSON.stringify({answer: this.state.answer}),
+      mode: 'cors'
+    }));
+  }
+  updateDecision(id) {
+    console.log('decision');
+    const sessionID = localStorage.getItem(constants.sessionIDKey);
+    this.processResponse(fetch(API_HOST + '/' + constants.gamePath + '/' + constants.decisionPath, {
+      headers: new Headers({
+        [constants.sessionIDHeaderName]: sessionID,
+        'Content-Type': 'application/json',
+      }),
+      method: 'POST',
+      body: JSON.stringify({id: id}),
       mode: 'cors'
     }));
   }
@@ -108,57 +121,12 @@ export class Game extends React.Component {
     this.processResponse(fetch(API_HOST + '/' + constants.gamePath + '/' + constants.UIPath, {
       headers: new Headers({
         [constants.sessionIDHeaderName]: sessionID,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       }),
       method: 'POST',
       body: JSON.stringify(obj),
       mode: 'cors'
     }));
-  }
-  request(action = 'load', query = '') {
-    let str = '?action=' + action;
-    if (action === 'QR') {
-      str += '&key=' + query;
-    }
-    if (action === 'answer') {
-      str += '&key=' + query;
-    }
-    if (action === 'decision') {
-      str += '&id=' + query;
-    }
-    if (action === 'UIOpen') {
-      str += '&target=' + query;
-    }
-    if (action === 'UIClose') {
-      str += '&target=' + query;
-    }
-    if (action === 'itemChange') {
-      str += '&target=' + query;
-    }
-    //alert(str);
-    fetch('../dialogue.php' + str, {
-      credentials: 'same-origin'  
-    })
-    .then(response => response.json())
-    .then(json => {
-      console.log(json);
-      if (!json.user) {
-        alert('已登出，請重新整理');
-      }
-      else if (json.content === 'invalid') {
-        //this.setState({text: 'invalid QQ'});
-        //alert('invalid QQ');
-      }
-      else {
-        if (action === 'next') this.playAudio(json.content.audio);
-        this.setState({
-          name: json.content.name,
-          text: json.content.sentence,
-          UI: json.content.UI,
-          decisions: json.content.decisions
-        });
-      }
-    });
   }
   componentDidMount() {
     this.load();
@@ -169,10 +137,6 @@ export class Game extends React.Component {
       this.updateNext();
     }
   }
-  itemChange(target) {
-    console.log('item changing');
-    this.request('itemChange', target);
-  }
   handleScan(data) {
     if (this.state.mode === 'QR') {
       //alert(data);
@@ -182,9 +146,46 @@ export class Game extends React.Component {
       //alert('nothing');
     }
   }
-  submitAnswer() {
-    this.setState({answer: ''})
-    this.request('answer', this.state.answer);
+  openItem(target) {
+    console.log('open item ', target);
+    const sessionID = localStorage.getItem(constants.sessionIDKey);
+    fetch(API_HOST + '/' + constants.gamePath + '/' + constants.UIPath, {
+      headers: new Headers({
+        [constants.sessionIDHeaderName]: sessionID,
+        'Content-Type': 'application/json',
+      }),
+      method: 'POST',
+      body: JSON.stringify({target: 'currentItem', item: target}),
+      mode: 'cors'
+    })
+    .then(async response => {
+      if (response.ok) {
+        const json = await response.json();
+        this.setState({
+          name: json.name,
+          text: json.text,
+          mode: json.mode,
+          UI: json.UI,
+          answer: ''
+        });
+        this.processResponse(fetch(API_HOST + '/' + constants.gamePath + '/' + constants.UIPath, {
+          headers: new Headers({
+            [constants.sessionIDHeaderName]: sessionID,
+            'Content-Type': 'application/json',
+          }),
+          method: 'POST',
+          body: JSON.stringify({target: 'itemView', flag: true}),
+          mode: 'cors'
+        }));
+      }
+      else if (response.status === 400) {
+        this.load();
+      }
+      else if (response.status === 401) {
+        localStorage.removeItem(constants.sessionIDKey);
+        alert('已登出，請重新整理');
+      }
+    });
   }
   render() {
     //console.log('rendering game');
@@ -195,15 +196,16 @@ export class Game extends React.Component {
       <ItemMenu 
         handleCloseMenu={() => this.changeUI({target: 'itemMenu', flag: false})} 
         handleCloseView={() => this.changeUI({target: 'itemView', flag: false})} 
+        handleOpenItem={target => this.openItem(target)} 
+        itemView={this.state.UI.itemView}
         currentItem={this.state.UI.currentItem}
-        itemChange={target => this.changeUI({target: 'currentItem', item: target})}
       />
     );
     const HistoryBlock = this.state.UI.history && (
       <History handleClose={() => this.changeUI({target: 'history', flag: false})}/>
     );
     const Decisions = this.state.mode === 'decision' && (
-      <Decision chooseDecision={() => this.chooseDecision()}/>
+      <Decision chooseDecision={id => this.updateDecision(id)}/>
     );
     const MainArea = (
       <div style={{position: 'absolute', height: '55%', width: '100%'}}>
@@ -213,11 +215,8 @@ export class Game extends React.Component {
     return (
       <div 
         style={{
-          position: 'fixed',
-          height: '100vh',
-          width: '100vw',
-          top: '0px',
-          left: '0px',
+          height: '100%',
+          width: '100%',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundImage: `url(${BG})`
@@ -282,6 +281,3 @@ export class Game extends React.Component {
   }
 }
 
-//export default {
-//  Message
-//}

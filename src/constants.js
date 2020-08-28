@@ -9,4 +9,5 @@ export const constants = {
   answerPath: 'answer',
   UIPath: 'UI',
   decisionPath: 'decision',
+  itemPath: 'item',
 };

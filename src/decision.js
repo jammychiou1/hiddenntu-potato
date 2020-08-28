@@ -1,4 +1,5 @@
 import React from 'react';
+import {constants} from './constants';
 export class Decision extends React.Component {
   constructor(props) {
     super(props);
@@ -7,6 +8,7 @@ export class Decision extends React.Component {
     }
   }
   componentDidMount() {
+    const sessionID = localStorage.getItem(constants.sessionIDKey);
     fetch(API_HOST + '/' + constants.gamePath + '/' + constants.decisionPath, {
       headers: new Headers({
         [constants.sessionIDHeaderName]: sessionID
@@ -14,14 +16,16 @@ export class Decision extends React.Component {
       mode: 'cors'
     })
     .then(async response => {
-      const json = await response.json();
-      this.setState({
-        decisionList: json.decisionList
-      });
+      if (response.ok) {
+        const json = await response.json();
+        this.setState({
+          decisionsList: json
+        });
+      }
     });
   }
   render() {
-    var result = [];
+    let result = [];
     for (let i = 0; i < this.state.decisionsList.length; i++) {
       result.push(
         <div 
@@ -32,7 +36,7 @@ export class Decision extends React.Component {
             this.props.chooseDecision(i);
           }}
           style={{
-            backgroundColor: '#123456',
+            backgroundColor: '#456789',
             margin: '5%'
           }}
         >

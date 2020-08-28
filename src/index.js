@@ -41,10 +41,10 @@ class Login extends React.Component {
     else {
       return (
         <div>
-        {this.props.fail && 'login failed\n'}
-        <input type='text' value={this.state.username} onChange={event => this.handleChange(event)} />
-        <button onClick={() => this.go()}>Login</button>
-        {/* this.state.loggedIn && <img src='../get/logo.png' /> */}
+          {this.props.fail && 'login failed\n'}
+          <input type='text' value={this.state.username} onChange={event => this.handleChange(event)} />
+          <button onClick={() => this.go()}>Login</button>
+          {/* this.state.loggedIn && <img src='../get/logo.png' /> */}
         </div>
       );
     }
@@ -59,6 +59,8 @@ class Main extends React.Component {
       loggedUser: null,
       fail: false,
       playing: false,
+      width: 0,
+      height: 0
     };
   }
 
@@ -124,12 +126,18 @@ class Main extends React.Component {
   updatePlaying(flag) {
     this.setState({playing: flag});
   }
+  
+  componentDidMount() {
+    this.setState({width: window.innerWidth, height: window.innerHeight});
+  }
+
   render() {
+    let content;
     if (this.state.playing) {
-      return (<Game/>);
+      content = (<Game/>);
     }
     else {
-      return (<Login
+      content = (<Login
         getSessionStatus={() => this.getSessionStatus()}
         testLogin={username => this.testLogin(username)} 
         logout={() => this.logout()} 
@@ -137,8 +145,17 @@ class Main extends React.Component {
         loggedUser={this.state.loggedUser}
         fail={this.state.fail}
         updatePlaying={flag => this.updatePlaying(flag)}
-        />);
+      />);
     }
+    return (<div style={{
+      width: this.state.width + 'px',
+      height: this.state.height + 'px',
+      position: 'fixed',
+      top: '0px',
+      left: '0px',
+    }}>
+      {content}
+    </div>);
   }
 }
 ReactDOM.render(
