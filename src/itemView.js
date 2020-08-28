@@ -119,7 +119,7 @@ export class ItemView extends React.Component {
           position: 'absolute',
           //margin: '0 auto',
           width: '90%',
-          height: '90%',
+          height: '80%',
           top: '50%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
@@ -129,7 +129,7 @@ export class ItemView extends React.Component {
           <div style={{flex: '0 1 auto'}}>
             <button onClick={e => {e.stopPropagation(); this.props.handleCloseView();}}>X</button>
           </div>
-          <div style={{flex: '1 1 auto', overflowY: 'scroll', backgroundColor: '#cc9999'}}>
+          <div style={{flex: '1 1 auto', overflowY: 'scroll', backgroundColor: '#cccc99'}}>
             {this.state.src !== null && <ItemContent currentItem={this.props.currentItem} src={this.state.src}/>}
           </div>            
         </div>
